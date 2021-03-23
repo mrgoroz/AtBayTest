@@ -10,8 +10,11 @@ async def get_task_id_from_queue():
 
 async def init_task(taskID):
     print('Init task taskID')
-    await write_status_to_dbs('taskId', StatusCode.Running)
-    await write_status_to_dbs('taskId', StatusCode.Co)
+    result = await write_status_to_dbs('taskId', StatusCode.Running)
+    if result:
+        await write_status_to_dbs('taskId', StatusCode.Complete)
+    else:
+        await write_status_to_dbs('taskId', StatusCode.Error)
     return True
 
 
@@ -24,7 +27,10 @@ async def write_status_to_dbs(scanId, status):
 async def main():
     while(True):
         taskId = await loop.create_task(get_task_id_from_queue())
-        taskStatus = await loop.create_task(init_task(taskId))
+        if not taskId:
+            await write_status_to_dbs('taskId', StatusCode.NotFound)
+        else:
+            taskStatus = await loop.create_task(init_task(taskId))
 
 
 if __name__ == '__main__':
